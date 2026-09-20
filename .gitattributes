@@ -1,0 +1,4 @@
+# Seals are byte-compared between a Windows runner and a Linux runner.
+# A CRLF rewrite breaks gate 4 and the failure looks like corruption, not line endings.
+* text=auto eol=lf
+*.seal -text
