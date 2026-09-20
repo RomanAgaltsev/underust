@@ -1,0 +1,25 @@
+[package]
+name = "underust"
+version = "0.1.0"
+publish = false
+description = "The underust harness: a Rust internals gym"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[[bin]]
+name = "underust"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+clap.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+toml.workspace = true
+underust-core.workspace = true
+
+[lints]
+workspace = true
