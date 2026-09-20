@@ -2,6 +2,7 @@
 
 mod cmd;
 mod repo;
+mod toolchain;
 
 use clap::{Parser, Subcommand};
 use underust_core::manifest::Mode;
@@ -26,6 +27,8 @@ enum Command {
     },
     /// Check every manifest for schema and consistency errors.
     Validate,
+    /// Report what this machine can grade, and how to fix what it cannot.
+    Doctor,
 }
 
 fn parse_mode(raw: &str) -> Result<Mode, String> {
@@ -46,6 +49,7 @@ fn main() -> anyhow::Result<()> {
     let root = repo::root()?;
     match cli.command {
         Command::List { track, mode } => cmd::list::run(&root, track.as_deref(), mode),
+        Command::Doctor => cmd::doctor::run(&root),
         Command::Validate => {
             let count = cmd::validate::run(&root)?;
             println!("validate: {count} manifests ok");
