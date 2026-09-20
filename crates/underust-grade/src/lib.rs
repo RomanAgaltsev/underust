@@ -4,7 +4,9 @@
 //! [`emit`], and the harness reads those lines back -- so the answer is computed by an
 //! instrument at run time, never asserted by whoever wrote the task.
 
+pub mod alloc;
 pub mod drop_log;
+pub mod rc;
 
 use serde::Serialize;
 
