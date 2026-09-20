@@ -5,3 +5,4 @@
 //! toolchain available to compile a task.
 
 pub mod manifest;
+pub mod seal;
