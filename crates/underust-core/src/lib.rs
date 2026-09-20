@@ -6,4 +6,5 @@
 
 pub mod host;
 pub mod manifest;
+pub mod requires;
 pub mod seal;
