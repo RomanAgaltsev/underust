@@ -7,7 +7,6 @@
 use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 
-use syn::spanned::Spanned as _;
 use syn::visit::Visit;
 
 /// One use of a forbidden construct.
