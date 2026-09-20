@@ -6,6 +6,7 @@
 
 pub mod host;
 pub mod manifest;
+pub mod measure;
 pub mod progress;
 pub mod requires;
 pub mod seal;
