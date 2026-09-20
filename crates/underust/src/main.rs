@@ -1,5 +1,6 @@
 //! The underust CLI.
 
+mod cargo;
 mod cmd;
 mod repo;
 mod toolchain;
@@ -29,6 +30,14 @@ enum Command {
     Validate,
     /// Report what this machine can grade, and how to fix what it cannot.
     Doctor,
+    /// Grade one task.
+    Test {
+        /// The task id, for example drop/01-field-order.
+        id: String,
+        /// Run inside the canonical linux image instead of on this host.
+        #[arg(long)]
+        docker: bool,
+    },
 }
 
 fn parse_mode(raw: &str) -> Result<Mode, String> {
@@ -50,6 +59,13 @@ fn main() -> anyhow::Result<()> {
     match cli.command {
         Command::List { track, mode } => cmd::list::run(&root, track.as_deref(), mode),
         Command::Doctor => cmd::doctor::run(&root),
+        Command::Test { id, docker } => {
+            if cmd::test::run(&root, &id, docker)? {
+                Ok(())
+            } else {
+                std::process::exit(1)
+            }
+        }
         Command::Validate => {
             let count = cmd::validate::run(&root)?;
             println!("validate: {count} manifests ok");
