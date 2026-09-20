@@ -26,21 +26,3 @@ pub fn root() -> anyhow::Result<PathBuf> {
 pub fn tasks_dir(root: &Path) -> PathBuf {
     root.join("tasks")
 }
-
-/// Where sealed solutions live.
-#[must_use]
-pub fn sealed_path(root: &Path, id: &str) -> PathBuf {
-    root.join(".sealed").join(format!("{id}.seal"))
-}
-
-/// Where the gitignored solving workspace lives.
-#[must_use]
-pub fn work_dir(root: &Path, id: &str) -> PathBuf {
-    root.join("work").join(id)
-}
-
-/// Where local progress is stored.
-#[must_use]
-pub fn progress_path(root: &Path) -> PathBuf {
-    root.join(".underust").join("progress.toml")
-}
