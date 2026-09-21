@@ -1,0 +1,16 @@
+id = "unsafe/01-aliasing"
+track = "unsafe"
+mode = "soundness"
+title = "Two mutable references, one allocation"
+points = 25
+answer_stability = "invariant"
+test_digest = "6a46c42120a54f9e"
+hint = """
+The bug is not in what the code computes -- run the tests and most of them pass. Ask
+instead how many live `&mut` exist at once, and what the compiler is allowed to assume
+because of that. `cargo +nightly miri test` will tell you where.
+"""
+
+[requires]
+toolchain = "nightly"
+components = ["miri"]

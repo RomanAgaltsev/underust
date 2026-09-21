@@ -48,7 +48,7 @@ pub fn resolve(requires: &Requires, host: &Host) -> Resolution {
     }
 
     for component in &requires.components {
-        if !host.has_component(component) {
+        if !host.has_component(&requires.toolchain, component) {
             gaps.push(Gap {
                 what: format!("component `{component}` is not installed"),
                 remedy: format!("rustup +{} component add {component}", requires.toolchain),
@@ -167,8 +167,12 @@ mod tests {
         let mut host = linux_host_with_stable();
         host.toolchains
             .push("nightly-x86_64-unknown-linux-gnu".to_owned());
-        host.components
-            .insert("miri-x86_64-unknown-linux-gnu".to_owned());
+        host.components.insert(
+            "nightly-x86_64-unknown-linux-gnu".to_owned(),
+            ["miri-x86_64-unknown-linux-gnu".to_owned()]
+                .into_iter()
+                .collect(),
+        );
         assert_eq!(resolve(&requires, &host), Resolution::Satisfied);
     }
 

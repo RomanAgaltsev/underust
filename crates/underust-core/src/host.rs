@@ -3,7 +3,7 @@
 //! The parsers here are pure so they can be tested without a toolchain present. The CLI
 //! is responsible for running the commands and handing their output in.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 /// A snapshot of the host's Rust tooling.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -16,8 +16,12 @@ pub struct Host {
     pub rustup: Option<String>,
     /// Installed toolchain names, default marker stripped.
     pub toolchains: Vec<String>,
-    /// Installed rustup components, as printed -- they carry their target triple.
-    pub components: BTreeSet<String>,
+    /// Installed rustup components, keyed by the toolchain they belong to.
+    ///
+    /// Per-toolchain because that is how rustup stores them: `miri` is installed on
+    /// nightly while the repository pins stable, so a single flat set would report miri
+    /// missing on a machine that has it.
+    pub components: BTreeMap<String, BTreeSet<String>>,
     /// Installed cargo subcommands, e.g. `cargo-expand`.
     pub tools: BTreeSet<String>,
     /// Whether a usable `docker` was found.
@@ -40,15 +44,17 @@ impl Host {
             .any(|installed| installed.starts_with(name))
     }
 
-    /// Whether any installed component starts with `name`.
+    /// Whether `toolchain` has a component whose name starts with `name`.
     ///
     /// `rustup component list --installed` prints `miri-x86_64-unknown-linux-gnu`, so an
-    /// exact match would never fire.
+    /// exact match would never fire. The toolchain is matched by prefix too, since
+    /// installed names carry their triple.
     #[must_use]
-    pub fn has_component(&self, name: &str) -> bool {
+    pub fn has_component(&self, toolchain: &str, name: &str) -> bool {
         self.components
             .iter()
-            .any(|installed| installed.starts_with(name))
+            .filter(|(installed_toolchain, _)| installed_toolchain.starts_with(toolchain))
+            .any(|(_, components)| components.iter().any(|c| c.starts_with(name)))
     }
 }
 
@@ -153,17 +159,44 @@ nightly-x86_64-unknown-linux-gnu
         assert!(!host.docker);
     }
 
+    fn host_with_nightly_miri() -> Host {
+        let mut components = BTreeMap::new();
+        components.insert(
+            "nightly-x86_64-unknown-linux-gnu".to_owned(),
+            ["miri-x86_64-unknown-linux-gnu".to_owned()]
+                .into_iter()
+                .collect::<BTreeSet<_>>(),
+        );
+        components.insert(
+            "1.98.1-x86_64-unknown-linux-gnu".to_owned(),
+            ["clippy-x86_64-unknown-linux-gnu".to_owned()]
+                .into_iter()
+                .collect::<BTreeSet<_>>(),
+        );
+        Host {
+            components,
+            ..Host::default()
+        }
+    }
+
     #[test]
     fn components_match_by_prefix_because_rustup_appends_the_triple() {
-        // `rustup component list --installed` prints `miri-x86_64-unknown-linux-gnu`,
-        // not `miri`. A caller asking "do I have miri" means the prefix.
-        let host = Host {
-            components: ["miri-x86_64-unknown-linux-gnu".to_owned()]
-                .into_iter()
-                .collect(),
-            ..Host::default()
-        };
-        assert!(host.has_component("miri"));
-        assert!(!host.has_component("rust-src"));
+        let host = host_with_nightly_miri();
+        assert!(host.has_component("nightly", "miri"));
+        assert!(!host.has_component("nightly", "rust-src"));
+    }
+
+    #[test]
+    fn a_component_on_one_toolchain_is_not_on_another() {
+        // The bug this replaced: `rustup component list --installed` reports the ACTIVE
+        // toolchain, which rust-toolchain.toml pins to stable. miri lives on nightly, so
+        // a flat set reported it missing on a machine that had it.
+        let host = host_with_nightly_miri();
+        assert!(host.has_component("nightly", "miri"));
+        assert!(
+            !host.has_component("1.98.1", "miri"),
+            "miri is installed on nightly, not on the pinned stable"
+        );
+        assert!(host.has_component("1.98.1", "clippy"));
     }
 }

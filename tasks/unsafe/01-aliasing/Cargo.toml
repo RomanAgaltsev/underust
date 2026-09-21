@@ -1,0 +1,11 @@
+[package]
+name = "task-unsafe-01-aliasing"
+version = "0.0.0"
+publish = false
+description = "underust task: two mutable references, one allocation"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true

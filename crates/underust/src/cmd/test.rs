@@ -29,6 +29,46 @@ pub fn deferred_to_m6(mode: Mode) -> Option<&'static str> {
     }
 }
 
+/// A cheap, dependency-free content digest (FNV-1a).
+///
+/// Not cryptographic and not meant to be: it exists to catch a solver quietly deleting an
+/// assertion, not to resist a forger. Whitespace is normalised first so `cargo fmt` cannot
+/// break the pin.
+#[must_use]
+pub fn digest(text: &str) -> String {
+    let normalised: String = text.split_whitespace().collect::<Vec<_>>().join(" ");
+    let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
+    for byte in normalised.as_bytes() {
+        hash ^= u64::from(*byte);
+        hash = hash.wrapping_mul(0x0000_0100_0000_01b3);
+    }
+    format!("{hash:016x}")
+}
+
+/// Verify a soundness task's tests have not been weakened.
+///
+/// # Errors
+/// Fails when the grader file is missing or its digest does not match the pinned one.
+pub fn verify_test_integrity(task: &Task) -> anyhow::Result<()> {
+    if task.mode != Mode::Soundness || task.test_digest.is_empty() {
+        return Ok(());
+    }
+    let path = task.dir.join("tests/grade.rs");
+    let text =
+        std::fs::read_to_string(&path).with_context(|| format!("reading {}", path.display()))?;
+    let actual = digest(&text);
+    if actual != task.test_digest {
+        bail!(
+            "{}: tests/grade.rs has changed (pinned {}, found {}). A soundness task is \
+             passed by removing the undefined behaviour, not by removing the tests.",
+            task.id,
+            task.test_digest,
+            actual
+        );
+    }
+    Ok(())
+}
+
 /// Find one task by id.
 ///
 /// # Errors
@@ -57,6 +97,8 @@ pub fn run(root: &Path, id: &str, docker: bool) -> anyhow::Result<bool> {
     if let Some(why) = deferred_to_m6(task.mode) {
         bail!("{id}: {why}");
     }
+
+    verify_test_integrity(&task)?;
 
     if task.mode == Mode::Predict {
         return crate::cmd::predict::grade(root, id, docker);
@@ -131,6 +173,23 @@ mod tests {
                 "{mode:?} must be gradeable in M0.5"
             );
         }
+    }
+
+    #[test]
+    fn the_digest_ignores_reformatting_but_not_deletion() {
+        let original = "#[test]\nfn a() {\n    assert!(true);\n}\n";
+        let reformatted = "#[test] fn a() { assert!(true); }";
+        let weakened = "#[test]\nfn a() {\n}\n";
+        assert_eq!(
+            digest(original),
+            digest(reformatted),
+            "cargo fmt must not break the pin"
+        );
+        assert_ne!(
+            digest(original),
+            digest(weakened),
+            "deleting an assertion must break the pin"
+        );
     }
 
     #[test]

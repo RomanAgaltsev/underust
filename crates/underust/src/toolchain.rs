@@ -43,14 +43,24 @@ pub fn probe_host() -> Host {
         .map(|out| host::parse_toolchain_list(&out))
         .unwrap_or_default();
 
-    let components = capture("rustup", &["component", "list", "--installed"])
+    // Per toolchain, not once: `rustup component list --installed` reports the ACTIVE
+    // toolchain only, which rust-toolchain.toml pins to stable -- so miri on nightly
+    // would read as missing.
+    let mut components = std::collections::BTreeMap::new();
+    for toolchain in &toolchains {
+        let installed = capture(
+            "rustup",
+            &["component", "list", "--toolchain", toolchain, "--installed"],
+        )
         .map(|out| {
             out.lines()
                 .map(|line| line.trim().to_owned())
                 .filter(|line| !line.is_empty())
-                .collect()
+                .collect::<BTreeSet<_>>()
         })
         .unwrap_or_default();
+        components.insert(toolchain.clone(), installed);
+    }
 
     let mut tools = BTreeSet::new();
     for tool in ["cargo-expand", "cargo-asm", "cargo-bloat", "cargo-nextest"] {

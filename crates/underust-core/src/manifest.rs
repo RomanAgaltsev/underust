@@ -92,6 +92,10 @@ pub struct Task {
     /// Attribution when the idea was borrowed. Code never is.
     #[serde(default)]
     pub inspired_by: String,
+    /// SOUNDNESS only: a digest of `tests/grade.rs`, so a solver cannot pass by weakening
+    /// the tests. Empty means unchecked.
+    #[serde(default)]
+    pub test_digest: String,
     /// Directory the manifest was loaded from. Not present in the file.
     #[serde(skip)]
     pub dir: PathBuf,
@@ -166,6 +170,12 @@ impl Task {
         if self.mode == Mode::Constrain && self.forbids.is_empty() {
             return Err(bad(
                 "a constrain task must forbid at least one construct".to_owned()
+            ));
+        }
+        if self.mode == Mode::Soundness && self.test_digest.trim().is_empty() {
+            return Err(bad(
+                "a soundness task must pin test_digest, or it can be passed by deleting the tests"
+                    .to_owned(),
             ));
         }
         if self.hint.trim().is_empty() {
@@ -279,6 +289,18 @@ target = "any"
             .validate()
             .expect_err("track/id disagreement must be rejected");
         assert!(err.to_string().contains("track"), "got: {err}");
+    }
+
+    #[test]
+    fn rejects_a_soundness_task_with_no_test_digest() {
+        let bad = SAMPLE
+            .replace("mode = \"predict\"", "mode = \"soundness\"")
+            .replace("predict = [\"order\"]", "predict = []");
+        let task: Task = toml::from_str(&bad).unwrap();
+        let err = task
+            .validate()
+            .expect_err("an unpinned soundness task must be rejected");
+        assert!(err.to_string().contains("test_digest"), "got: {err}");
     }
 
     #[test]

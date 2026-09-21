@@ -1,7 +1,7 @@
 //! CI gates 3, 4 and 6.
 
 use std::collections::BTreeSet;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Command;
 
 use anyhow::{Context as _, bail};
@@ -46,47 +46,6 @@ pub fn ci_stubs(root: &Path) -> anyhow::Result<usize> {
     Ok(tasks.len())
 }
 
-/// Files an overlay replaced or created, so they can be put back.
-struct Overlay {
-    replaced: Vec<(PathBuf, String)>,
-    created: Vec<PathBuf>,
-}
-
-impl Overlay {
-    fn apply(task_dir: &Path, files: &std::collections::BTreeMap<String, String>) -> Self {
-        let mut overlay = Overlay {
-            replaced: Vec::new(),
-            created: Vec::new(),
-        };
-        for (name, contents) in files {
-            let dest = task_dir.join(name);
-            match std::fs::read_to_string(&dest) {
-                Ok(original) => overlay.replaced.push((dest.clone(), original)),
-                Err(_) => overlay.created.push(dest.clone()),
-            }
-            if let Some(parent) = dest.parent() {
-                let _ = std::fs::create_dir_all(parent);
-            }
-            let _ = std::fs::write(&dest, contents);
-        }
-        overlay
-    }
-
-    /// Put the task directory back exactly as it was.
-    ///
-    /// Files the overlay created are deleted, not merely reverted -- otherwise a sealed
-    /// solution that adds a file would leave it behind and the next run would grade a
-    /// half-solved task.
-    fn revert(self) {
-        for (path, original) in self.replaced {
-            let _ = std::fs::write(path, original);
-        }
-        for path in self.created {
-            let _ = std::fs::remove_file(path);
-        }
-    }
-}
-
 /// Gate 4: every sealed solution unseals and passes its own tests.
 ///
 /// Skips are counted and printed. A gate that reports only its successes is how undergo
@@ -125,17 +84,37 @@ pub fn prove(root: &Path) -> anyhow::Result<ProveReport> {
         let blob = std::fs::read_to_string(&sealed_path)?;
         let opened = seal::unseal(&blob).with_context(|| format!("unsealing {}", task.id))?;
 
-        let overlay = Overlay::apply(&task.dir, &opened.files);
-        let outcome = crate::cargo::run_task_tests(root, task, false, false);
-        overlay.revert();
+        let outcome = {
+            // The guard restores the task directory when this scope ends, including if
+            // run_task_tests returns early -- the old explicit revert() did not.
+            let _overlay = crate::overlay::Overlay::apply(&task.dir, &opened.files)
+                .with_context(|| format!("overlaying the seal onto {}", task.dir.display()))?;
+            crate::cargo::run_task_tests(root, task, false, false)
+        };
 
         match outcome {
             Ok(outcome) if outcome.passed => {
                 println!("  ok   {}", task.id);
                 report.proven += 1;
             }
-            Ok(_) | Err(_) => {
+            Ok(failed) => {
                 println!("  FAIL {}", task.id);
+                for line in failed
+                    .output
+                    .lines()
+                    .filter(|l| !l.trim().is_empty())
+                    .rev()
+                    .take(12)
+                    .collect::<Vec<_>>()
+                    .into_iter()
+                    .rev()
+                {
+                    println!("       {line}");
+                }
+                report.failures.push(task.id.clone());
+            }
+            Err(e) => {
+                println!("  FAIL {} -- could not run: {e:#}", task.id);
                 report.failures.push(task.id.clone());
             }
         }
