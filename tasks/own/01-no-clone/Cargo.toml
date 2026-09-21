@@ -1,0 +1,11 @@
+[package]
+name = "task-own-01-no-clone"
+version = "0.0.0"
+publish = false
+description = "underust task: rotate a buffer without cloning it"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true

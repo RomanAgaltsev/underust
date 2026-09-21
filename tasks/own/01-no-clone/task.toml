@@ -1,0 +1,15 @@
+id = "own/01-no-clone"
+track = "own"
+mode = "constrain"
+title = "Rotate a buffer without cloning it"
+points = 20
+answer_stability = "invariant"
+forbids = ["clone", "to_owned", "to_vec", "to_string", "Rc", "Arc", "RefCell"]
+hint = """
+You need the old value out of a `&mut` before you can put a new one in, and the borrow
+checker will not let you simply move it out. The standard library has two functions for
+exactly that situation, and neither of them copies anything.
+"""
+
+[requires]
+toolchain = "stable"
