@@ -38,3 +38,9 @@ pub fn work_dir(root: &Path, id: &str) -> PathBuf {
 pub fn progress_path(root: &Path) -> PathBuf {
     root.join(".underust").join("progress.toml")
 }
+
+/// Where sealed solutions live.
+#[must_use]
+pub fn sealed_path(root: &Path, id: &str) -> PathBuf {
+    root.join(".sealed").join(format!("{id}.seal"))
+}

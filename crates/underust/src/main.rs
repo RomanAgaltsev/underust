@@ -30,6 +30,24 @@ enum Command {
     Validate,
     /// Report what this machine can grade, and how to fix what it cannot.
     Doctor,
+    /// Rung one: a nudge. Always available.
+    Hint {
+        /// The task id.
+        id: String,
+    },
+    /// Rung two: the full solution. Refuses while the task's tests fail.
+    ///
+    /// The seal is obfuscation, not secrecy. This gate is policy: it makes the easy
+    /// path the honest one, and does not pretend to stop a determined reader.
+    Reveal {
+        /// The task id.
+        id: String,
+        /// Override the gate. Recorded in local progress.
+        #[arg(long)]
+        stuck: bool,
+    },
+    /// Show what has been solved, hinted and revealed on this machine.
+    Progress,
     /// Scaffold a blank prediction for a predict task.
     Predict {
         /// The task id.
@@ -64,6 +82,9 @@ fn main() -> anyhow::Result<()> {
     match cli.command {
         Command::List { track, mode } => cmd::list::run(&root, track.as_deref(), mode),
         Command::Doctor => cmd::doctor::run(&root),
+        Command::Hint { id } => cmd::reveal::hint(&root, &id),
+        Command::Reveal { id, stuck } => cmd::reveal::reveal(&root, &id, stuck),
+        Command::Progress => cmd::reveal::show(&root),
         Command::Predict { id } => {
             let path = cmd::predict::scaffold(&root, &id)?;
             println!("wrote {}", path.display());
