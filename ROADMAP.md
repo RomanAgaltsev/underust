@@ -2,14 +2,15 @@
 
 Design spec lives in the private vault; this file is the public working view.
 
-**Shipped:** nothing yet. M0 (the harness) is in progress; M0.5 adds the first five tasks.
+**Shipped:** M0 (the harness) and M0.5 (the vertical slice). **5 tasks, 5 modes, 5 of 22
+tracks with content.** Everything past M0.5 is gated -- see the note below.
 
 ## Milestones
 
 | | Milestone | Content | Status |
 |---|---|---|---|
-| M0 | Foundation | workspace, three crates, CLI, seven CI gates, Dockerfile, release automation | in progress |
-| M0.5 | Vertical slice | one exemplar per instrument-graded mode (5 tasks) | not started |
+| M0 | Foundation | workspace, three crates, CLI, seven CI gates, Dockerfile, release automation | **shipped** |
+| M0.5 | Vertical slice | one exemplar per instrument-graded mode (5 tasks) | **shipped** |
 | M1 | Stable core | depth in `drop`, `alloc`, `weak`, `layout` | gated |
 | M2 | Compile tracks | `own`, `borrowck`, `lifetime` + CONSTRAIN | gated |
 | M3 | Nightly tracks | `unsafe` + SOUNDNESS, `mono`, `macro` | gated |
