@@ -1,0 +1,14 @@
+[package]
+name = "task-drop-01-field-order"
+version = "0.0.0"
+publish = false
+description = "underust task: which field drops first?"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+underust-grade.workspace = true
+
+[lints]
+workspace = true

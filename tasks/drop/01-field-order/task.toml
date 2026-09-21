@@ -1,0 +1,16 @@
+id = "drop/01-field-order"
+track = "drop"
+mode = "predict"
+title = "Which field drops first?"
+points = 10
+answer_stability = "invariant"
+predict = ["order"]
+hint = """
+There are two rules here, not one, and they point in opposite directions.
+One governs the fields inside a struct. The other governs bindings in a block.
+"""
+
+[requires]
+toolchain = "stable"
+os = "any"
+target = "any"

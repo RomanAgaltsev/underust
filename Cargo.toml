@@ -3,7 +3,7 @@ resolver = "3"
 # `tasks/*/*` is deliberately absent until the first task crate exists (Task 17 adds it).
 # Cargo treats a glob that matches nothing as a LITERAL path and fails to load it, so an
 # empty `tasks/` directory does not help -- the pattern must have at least one match.
-members = ["crates/*"]
+members = ["crates/*", "tasks/*/*"]
 
 [workspace.package]
 edition      = "2024"

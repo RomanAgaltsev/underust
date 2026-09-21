@@ -38,7 +38,11 @@ pub struct Mismatch {
 pub fn parse_measurements(stdout: &str) -> Vec<Measurement> {
     stdout
         .lines()
-        .filter_map(|line| line.trim().strip_prefix(MARKER))
+        // The marker is searched for anywhere in the line, not just at its start.
+        // libtest prints `test NAME ... ` without a newline and only then flushes the
+        // test's own output under --nocapture, so a measurement routinely lands mid-line:
+        //     test report_the_drop_order ... UNDERUST-MEASURE order ["a","b"]
+        .filter_map(|line| line.find(MARKER).map(|at| &line[at + MARKER.len()..]))
         .filter_map(|rest| {
             let rest = rest.trim_start();
             let (name, payload) = rest.split_once(char::is_whitespace)?;
@@ -101,6 +105,26 @@ test grade::drop_order ... ok
         assert_eq!(found[0].name, "order");
         assert_eq!(found[0].value, json!(["b", "a", "c"]));
         assert_eq!(found[1].value, json!(3));
+    }
+
+    #[test]
+    fn finds_a_measurement_libtest_appended_to_its_own_status_line() {
+        // Real captured output. libtest writes "test NAME ... " with no newline, so the
+        // marker is not at column 0. Six unit tests passed on idealised input while the
+        // real harness silently found nothing.
+        const REAL: &str = "\
+running 1 test
+test report_the_drop_order ... UNDERUST-MEASURE order [\"loose_b\",\"first\"]
+ok
+";
+        let found = parse_measurements(REAL);
+        assert_eq!(
+            found.len(),
+            1,
+            "the marker is not always at the start of a line"
+        );
+        assert_eq!(found[0].name, "order");
+        assert_eq!(found[0].value, json!(["loose_b", "first"]));
     }
 
     #[test]

@@ -93,6 +93,14 @@ pub fn grade(root: &Path, id: &str, docker: bool) -> anyhow::Result<bool> {
 
     let mismatches = diff(&predicted, &outcome.measurements);
     if mismatches.is_empty() {
+        // Recorded here rather than in `cmd::test::run`: predict returns before that
+        // function's record_pass, so without this a correct prediction stayed "open" in
+        // `progress` and scored nothing.
+        let path = crate::repo::progress_path(root);
+        let mut store = underust_core::progress::load(&path)?;
+        store.record_pass(id);
+        underust_core::progress::save(&store, &path)?;
+
         println!("PASS {id} -- prediction matched reality");
         return Ok(true);
     }
