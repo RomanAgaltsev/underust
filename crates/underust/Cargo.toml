@@ -1,6 +1,6 @@
 [package]
 name = "underust"
-version = "0.1.0" # x-release-please-version
+version = "0.2.0" # x-release-please-version
 publish = false
 description = "The underust harness: a Rust internals gym"
 edition.workspace = true
