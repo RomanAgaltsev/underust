@@ -84,7 +84,7 @@ fn render(value: Option<&Value>) -> String {
 pub fn grade(root: &Path, id: &str, docker: bool) -> anyhow::Result<bool> {
     let task = crate::cmd::test::find(root, id)?;
     let predicted = read_prediction(&crate::repo::work_dir(root, id).join("prediction.toml"))?;
-    let outcome = crate::cargo::run_task_tests(root, &task, docker)?;
+    let outcome = crate::cargo::run_task_tests(root, &task, docker, true)?;
 
     if !outcome.passed {
         print!("{}", outcome.output);

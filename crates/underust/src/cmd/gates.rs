@@ -126,7 +126,7 @@ pub fn prove(root: &Path) -> anyhow::Result<ProveReport> {
         let opened = seal::unseal(&blob).with_context(|| format!("unsealing {}", task.id))?;
 
         let overlay = Overlay::apply(&task.dir, &opened.files);
-        let outcome = crate::cargo::run_task_tests(root, task, false);
+        let outcome = crate::cargo::run_task_tests(root, task, false, false);
         overlay.revert();
 
         match outcome {

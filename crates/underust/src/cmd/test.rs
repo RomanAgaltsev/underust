@@ -75,7 +75,7 @@ pub fn run(root: &Path, id: &str, docker: bool) -> anyhow::Result<bool> {
         }
     }
 
-    let outcome = crate::cargo::run_task_tests(root, &task, docker)?;
+    let outcome = crate::cargo::run_task_tests(root, &task, docker, true)?;
     print!("{}", outcome.output);
 
     if task.mode == Mode::Constrain {

@@ -2,6 +2,7 @@
 
 mod cargo;
 mod cmd;
+mod overlay;
 mod repo;
 mod toolchain;
 

@@ -40,7 +40,7 @@ pub fn reveal(root: &Path, id: &str, stuck: bool) -> anyhow::Result<()> {
     }
 
     if !stuck {
-        let outcome = crate::cargo::run_task_tests(root, &task, false)?;
+        let outcome = crate::cargo::run_task_tests(root, &task, false, true)?;
         if !outcome.passed {
             println!("refusing to reveal {id} -- its tests do not pass yet.");
             println!("  take rung one first:  underust hint {id}");

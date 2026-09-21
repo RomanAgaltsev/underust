@@ -34,10 +34,33 @@ pub fn package_name(task: &Task) -> String {
 /// SOUNDNESS tasks run under `cargo +nightly miri test` instead, because miri's verdict is
 /// the grade.
 ///
+/// When `use_work` is set, anything in `work/<id>/` is laid over the task directory for
+/// the duration of the run and removed afterwards. That is how R9 is honoured: the solver
+/// edits `work/`, the task directory stays pristine, and cargo still sees a normal crate.
+/// `prove` passes `false`, because it is grading the sealed solution and must not pick up
+/// whatever the local solver happens to have in progress.
+///
 /// # Errors
 /// Fails when the child process cannot be spawned, or a required tool is absent.
-pub fn run_task_tests(root: &Path, task: &Task, docker: bool) -> anyhow::Result<Outcome> {
+pub fn run_task_tests(
+    root: &Path,
+    task: &Task,
+    docker: bool,
+    use_work: bool,
+) -> anyhow::Result<Outcome> {
     let package = package_name(task);
+
+    // Held for the whole function: dropping it restores the task directory, including
+    // when a test fails or this function returns early with an error.
+    let _overlay = if use_work {
+        let work = crate::repo::work_dir(root, &task.id);
+        let files = crate::overlay::read_tree(&work)
+            .with_context(|| format!("reading {}", work.display()))?;
+        crate::overlay::Overlay::apply(&task.dir, &files)
+            .with_context(|| format!("overlaying work onto {}", task.dir.display()))?
+    } else {
+        crate::overlay::Overlay::none()
+    };
 
     let mut command = if docker {
         let mut docker_cmd = Command::new("docker");
