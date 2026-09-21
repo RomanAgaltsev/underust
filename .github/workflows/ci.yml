@@ -1,0 +1,102 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@1.98.1
+        with:
+          components: rustfmt
+      - run: cargo fmt --all --check
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@1.98.1
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+
+  # The Windows leg is load-bearing, not decorative: nothing in the daily loop runs on
+  # Windows (spec 9.3), so this job is the only thing standing behind R14's promise that
+  # Windows is first class. It is a required check.
+  gates:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@1.98.1
+      - uses: Swatinem/rust-cache@v2
+
+      # NOT --workspace. A BUILD task ships a todo!() stub, so its graded tests are
+      # supposed to fail; --workspace can never be green once any task exists.
+      - name: harness tests
+        run: cargo test -p underust-core -p underust-grade -p underust -- --test-threads=1
+
+      - run: cargo run -q -p underust -- ci-stubs
+      - run: cargo run -q -p underust -- validate
+      - run: cargo run -q -p underust -- radar-check
+
+      - name: prove (capturing the log for the leak check)
+        shell: bash
+        run: cargo run -q -p underust -- prove | tee prove.log
+
+      - name: assert the skip count has not risen
+        shell: bash
+        run: |
+          # Pinned, because an unpinned skip count is how undergo once shipped a gate
+          # claiming 174 proofs while performing three. On a stable-only runner two tasks
+          # skip: drop/01 seals no answer, and unsafe/01 needs miri.
+          expected=2
+          actual=$(sed -n 's/^prove: [0-9]* proven, \([0-9]*\) skipped$/\1/p' prove.log)
+          echo "skips: expected<=$expected actual=$actual"
+          test -n "$actual"
+          test "$actual" -le "$expected"
+
+      - name: gate 7 -- no sealed text in a log that will be public
+        run: cargo run -q -p underust -- leak-check prove.log
+
+  # An inverted gate: it asserts the shipped stub FAILS miri. If a refactor accidentally
+  # removes the undefined behaviour, the soundness exemplar silently becomes unsolvable
+  # and nothing else would notice.
+  nightly:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: miri, rust-src
+      - uses: Swatinem/rust-cache@v2
+
+      - name: the shipped soundness stub must be unsound
+        run: |
+          if cargo +nightly miri test -p task-unsafe-01-aliasing -- --test-threads=1; then
+            echo "::error::the soundness exemplar's stub passed miri -- it has no undefined behaviour left"
+            exit 1
+          fi
+          echo "miri correctly rejected the unsound stub"
+
+      - name: and its sealed solution must be sound
+        run: cargo run -q -p underust -- prove
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: docker build -t underust-canonical .
+      - name: gate 4 inside the canonical image
+        run: docker run --rm -v "$PWD":/w -w /w underust-canonical cargo run -q -p underust -- prove
