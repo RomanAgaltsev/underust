@@ -48,6 +48,12 @@ enum Command {
     },
     /// Show what has been solved, hinted and revealed on this machine.
     Progress,
+    /// Gate 3: every task stub compiles.
+    CiStubs,
+    /// Gate 4: every sealed solution unseals and passes its own tests.
+    Prove,
+    /// Gate 6: every radar invalidation names a task that exists.
+    RadarCheck,
     /// Scaffold a blank prediction for a predict task.
     Predict {
         /// The task id.
@@ -85,6 +91,9 @@ fn main() -> anyhow::Result<()> {
         Command::Hint { id } => cmd::reveal::hint(&root, &id),
         Command::Reveal { id, stuck } => cmd::reveal::reveal(&root, &id, stuck),
         Command::Progress => cmd::reveal::show(&root),
+        Command::CiStubs => cmd::gates::ci_stubs(&root).map(|_| ()),
+        Command::Prove => cmd::gates::prove(&root).map(|_| ()),
+        Command::RadarCheck => cmd::gates::radar_check(&root).map(|_| ()),
         Command::Predict { id } => {
             let path = cmd::predict::scaffold(&root, &id)?;
             println!("wrote {}", path.display());
