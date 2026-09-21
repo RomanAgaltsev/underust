@@ -1,0 +1,6 @@
+# target/ in particular: bind-mounting a host target/ into the container mixes artifacts
+# built by two different environments, and the failures are baffling.
+target/
+work/
+.underust/
+.git/

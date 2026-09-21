@@ -53,6 +53,11 @@ enum Command {
     CiStubs,
     /// Gate 4: every sealed solution unseals and passes its own tests.
     Prove,
+    /// Gate 7: no sealed text appears in a public CI log.
+    LeakCheck {
+        /// The captured log to search.
+        log: std::path::PathBuf,
+    },
     /// Gate 6: every radar invalidation names a task that exists.
     RadarCheck,
     /// Author-side: print the digest of a task's tests/grade.rs.
@@ -108,6 +113,7 @@ fn main() -> anyhow::Result<()> {
         Command::CiStubs => cmd::gates::ci_stubs(&root).map(|_| ()),
         Command::Prove => cmd::gates::prove(&root).map(|_| ()),
         Command::RadarCheck => cmd::gates::radar_check(&root).map(|_| ()),
+        Command::LeakCheck { log } => cmd::leak::run(&root, &log),
         Command::Digest { id } => {
             let task = cmd::test::find(&root, &id)?;
             let path = task.dir.join("tests/grade.rs");
