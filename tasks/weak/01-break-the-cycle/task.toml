@@ -1,0 +1,13 @@
+id = "weak/01-break-the-cycle"
+track = "weak"
+mode = "build"
+title = "Break the cycle"
+points = 10
+answer_stability = "invariant"
+hint = """
+A parent keeping its children alive is fine. A child keeping its parent alive is the cycle.
+One of the two directions does not need to own anything.
+"""
+
+[requires]
+toolchain = "stable"

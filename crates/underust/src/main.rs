@@ -54,6 +54,14 @@ enum Command {
     Prove,
     /// Gate 6: every radar invalidation names a task that exists.
     RadarCheck,
+    /// Author-side: seal a solution directory into .sealed/<id>.seal.
+    Seal {
+        /// The task id.
+        id: String,
+        /// Directory holding EXPLANATION.md and files/.
+        #[arg(long)]
+        from: std::path::PathBuf,
+    },
     /// Scaffold a blank prediction for a predict task.
     Predict {
         /// The task id.
@@ -94,6 +102,7 @@ fn main() -> anyhow::Result<()> {
         Command::CiStubs => cmd::gates::ci_stubs(&root).map(|_| ()),
         Command::Prove => cmd::gates::prove(&root).map(|_| ()),
         Command::RadarCheck => cmd::gates::radar_check(&root).map(|_| ()),
+        Command::Seal { id, from } => cmd::seal_tool::run(&root, &id, &from),
         Command::Predict { id } => {
             let path = cmd::predict::scaffold(&root, &id)?;
             println!("wrote {}", path.display());
