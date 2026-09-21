@@ -30,6 +30,11 @@ enum Command {
     Validate,
     /// Report what this machine can grade, and how to fix what it cannot.
     Doctor,
+    /// Scaffold a blank prediction for a predict task.
+    Predict {
+        /// The task id.
+        id: String,
+    },
     /// Grade one task.
     Test {
         /// The task id, for example drop/01-field-order.
@@ -59,6 +64,12 @@ fn main() -> anyhow::Result<()> {
     match cli.command {
         Command::List { track, mode } => cmd::list::run(&root, track.as_deref(), mode),
         Command::Doctor => cmd::doctor::run(&root),
+        Command::Predict { id } => {
+            let path = cmd::predict::scaffold(&root, &id)?;
+            println!("wrote {}", path.display());
+            println!("fill it in, then run: underust test {id}");
+            Ok(())
+        }
         Command::Test { id, docker } => {
             if cmd::test::run(&root, &id, docker)? {
                 Ok(())

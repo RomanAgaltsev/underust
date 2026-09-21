@@ -5,6 +5,7 @@ use std::process::Command;
 
 use anyhow::{Context as _, bail};
 use underust_core::manifest::{Mode, Task};
+use underust_core::measure::{Measurement, parse_measurements};
 
 /// The canonical image used by `--docker`.
 pub const IMAGE: &str = "rust:1.98.1";
@@ -16,6 +17,8 @@ pub struct Outcome {
     pub passed: bool,
     /// Captured output, including any `UNDERUST-MEASURE` lines.
     pub output: String,
+    /// Measurements the task reported over the line protocol.
+    pub measurements: Vec<Measurement>,
 }
 
 /// The cargo package name for a task, derived from its id.
@@ -79,5 +82,6 @@ pub fn run_task_tests(root: &Path, task: &Task, docker: bool) -> anyhow::Result<
     Ok(Outcome {
         passed: out.status.success(),
         output: format!("{stdout}{stderr}"),
+        measurements: parse_measurements(&stdout),
     })
 }

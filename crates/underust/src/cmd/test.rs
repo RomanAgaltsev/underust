@@ -58,6 +58,10 @@ pub fn run(root: &Path, id: &str, docker: bool) -> anyhow::Result<bool> {
         bail!("{id}: {why}");
     }
 
+    if task.mode == Mode::Predict {
+        return crate::cmd::predict::grade(root, id, docker);
+    }
+
     if !docker {
         let host = crate::toolchain::probe_host();
         if let Resolution::Missing(gaps) = resolve(&task.requires, &host) {
