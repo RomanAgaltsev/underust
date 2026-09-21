@@ -16,7 +16,7 @@ authors      = ["Roman Agaltsev <roman-agalcev@yandex.ru>"]
 underust-core  = { path = "crates/underust-core" }
 underust-grade = { path = "crates/underust-grade" }
 anyhow     = "1"
-base64     = "0.22"
+base64     = "0.23"
 clap       = { version = "4.6", features = ["derive"] }
 # default-features = false is load-bearing: the default set includes `runtime_detection`,
 # which can reach for a system zlib. No dependency may require a C compiler (spec 9.4).
