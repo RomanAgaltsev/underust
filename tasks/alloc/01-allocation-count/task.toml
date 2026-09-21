@@ -1,0 +1,14 @@
+id = "alloc/01-allocation-count"
+track = "alloc"
+mode = "optimize"
+title = "Eleven allocations, three allowed"
+points = 15
+answer_stability = "invariant"
+hint = """
+Count the intermediate collections. Each `collect()` that feeds straight into another
+adaptor buys a heap allocation you then throw away, and `to_uppercase()` builds a fresh
+String per name. Ask what you would write if you were allowed only one buffer.
+"""
+
+[requires]
+toolchain = "stable"

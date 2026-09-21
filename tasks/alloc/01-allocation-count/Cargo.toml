@@ -1,0 +1,14 @@
+[package]
+name = "task-alloc-01-allocation-count"
+version = "0.0.0"
+publish = false
+description = "underust task: four allocations too many"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+underust-grade.workspace = true
+
+[lints]
+workspace = true
