@@ -3,7 +3,7 @@
 # Used by `underust test --docker` and by the CI parity job. Keep the tag in step with
 # rust-toolchain.toml and with cargo::IMAGE in crates/underust/src/cargo.rs; Renovate
 # proposes bumps for the FROM line.
-FROM rust:1.98.1-bookworm
+FROM rust:1.99.0-bookworm
 
 # Nightly plus miri: the SOUNDNESS track's oracle. rust-src is what miri builds its
 # sysroot from, and without it `cargo miri setup` fails with an error about a missing
